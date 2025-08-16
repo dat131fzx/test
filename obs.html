@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nhận Camera từ URL</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        video { max-width: 100%; margin: 10px 0; border: 2px solid #ddd; }
+        #status { margin: 20px; font-weight: bold; }
+        #error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Kết nối Camera từ URL</h1>
+    
+    <video id="remoteVideo" autoplay playsinline></video>
+    
+    <div id="status">Đang kết nối...</div>
+    
+    <script>
+        // Lấy ID từ URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const peerId = urlParams.get('id');
+        
+        if (!peerId) {
+            document.getElementById('status').textContent = "Thiếu ID kết nối trong URL!";
+            document.getElementById('status').style.color = 'red';
+        } else {
+            connectToPeer(peerId);
+        }
+        
+        function connectToPeer(targetPeerId) {
+            const peer = new Peer();
+            const remoteVideo = document.getElementById('remoteVideo');
+            
+            peer.on('open', () => {
+                document.getElementById('status').textContent = `Đang kết nối đến ${targetPeerId}...`;
+                
+                const call = peer.call(targetPeerId, null);
+                
+                call.on('stream', (remoteStream) => {
+                    document.getElementById('status').textContent = "Đã kết nối thành công!";
+                    remoteVideo.srcObject = remoteStream;
+                });
+                
+                call.on('error', (err) => {
+                    document.getElementById('status').textContent = `Lỗi kết nối: ${err}`;
+                    document.getElementById('status').style.color = 'red';
+                });
+            });
+            
+            peer.on('error', (err) => {
+                document.getElementById('status').textContent = `Lỗi PeerJS: ${err}`;
+                document.getElementById('status').style.color = 'red';
+            });
+        }
+    </script>
+</body>
+</html>
