@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chia sẻ Camera qua URL</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        video { max-width: 100%; margin: 10px 0; border: 2px solid #ddd; }
+        #status { margin: 20px; font-weight: bold; }
+        #connectionUrl { 
+            background: #f0f0f0; 
+            padding: 10px; 
+            margin: 10px auto; 
+            max-width: 80%;
+            word-break: break-all;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chia sẻ Camera qua URL</h1>
+    
+    <video id="localVideo" autoplay muted playsinline></video>
+    
+    <div id="status">Đang khởi tạo kết nối...</div>
+    
+    <div id="connectionUrl"></div>
+    
+    <button id="copyBtn">Copy URL kết nối</button>
+    
+    <script>
+        const peer = new Peer();
+        let localStream;
+        
+        peer.on('open', (id) => {
+            const connectionUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}obs.html?id=${id}`;
+            document.getElementById('status').textContent = "Kết nối thành công!";
+            document.getElementById('connectionUrl').textContent = connectionUrl;
+            
+            // Tự động bật camera
+            startCamera();
+        });
+        
+        peer.on('call', (call) => {
+            call.answer(localStream);
+        });
+        
+        async function startCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+            } catch (err) {
+                document.getElementById('status').textContent = `Lỗi truy cập camera: ${err.message}`;
+                document.getElementById('status').style.color = 'red';
+            }
+        }
+        
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const url = document.getElementById('connectionUrl').textContent;
+            navigator.clipboard.writeText(url)
+                .then(() => alert('Đã copy URL kết nối!'))
+                .catch(err => console.error('Lỗi khi copy:', err));
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (peer) {
+                peer.destroy();
+            }
+        });
+    </script>
+</body>
+</html>
